@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="512">
+      <stop offset="0" stop-color="#121212"/>
+      <stop offset="1" stop-color="#0A0A0A"/>
+    </linearGradient>
+    <linearGradient id="disc" x1="256" y1="96" x2="256" y2="416">
+      <stop offset="0" stop-color="#22633c"/>
+      <stop offset="1" stop-color="#123620"/>
+    </linearGradient>
+    <linearGradient id="fern" x1="256" y1="120" x2="256" y2="400">
+      <stop offset="0" stop-color="#e0b64d"/>
+      <stop offset="1" stop-color="#c9961a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="176" fill="url(#disc)" stroke="#c9961a" stroke-opacity="0.5" stroke-width="8"/>
+  <g transform="translate(256,256) scale(3.9) translate(-48,-48)">
+    <path d="M48 82C48 82 46 58 46 46C46 30 48 16 48 16C48 16 50 30 50 46C50 58 48 82 48 82Z" fill="url(#fern)"/>
+    <g stroke="url(#fern)" stroke-width="3.4" stroke-linecap="round" fill="none">
+      <path d="M48 30C35 26 22 24 22 14"/>
+      <path d="M48 30C61 26 74 24 74 14"/>
+      <path d="M48 40C37 36 26 34 26 26"/>
+      <path d="M48 40C59 36 70 34 70 26"/>
+      <path d="M48 50C39 46 30 44 30 38"/>
+      <path d="M48 50C57 46 66 44 66 38"/>
+      <path d="M48 60C41 56 34 54 34 50"/>
+      <path d="M48 60C55 56 62 54 62 50"/>
+    </g>
+  </g>
+</svg>
