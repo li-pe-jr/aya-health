@@ -1,0 +1,166 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Aya palette */
+  --color-obsidian: #0a0a0a;
+  --color-obsidian-soft: #121212;
+  --color-forest: #1a4d2e;
+  --color-forest-bright: #22633c;
+  --color-forest-deep: #123620;
+  --color-gold: #c9961a;
+  --color-gold-soft: #e0b64d;
+  --color-amethyst: #4a1a6b;
+  --color-amethyst-soft: #6a2a94;
+  --color-cream: #e8e0d0;
+  --color-cloud: #f5f5f0;
+
+  /* status colours */
+  --color-status-home: #2fae5f;
+  --color-status-pharm: #e2c044;
+  --color-status-clinic: #e08a2a;
+  --color-status-emergency: #e0483d;
+
+  --font-sans:
+    'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Sora', 'Manrope', ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1.25rem;
+
+  --default-transition-duration: 200ms;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-obsidian);
+    color: var(--color-cloud);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
+  }
+
+  button {
+    font-family: inherit;
+  }
+
+  /* thin, subtle scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(201, 150, 26, 0.25) transparent;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* ambient background gradients (amethyst depth + gold/green glow) */
+  .aya-bg {
+    background-color: var(--color-obsidian);
+    background-image:
+      radial-gradient(
+        60% 45% at 15% 0%,
+        rgba(26, 77, 46, 0.35) 0%,
+        transparent 60%
+      ),
+      radial-gradient(
+        70% 50% at 100% 100%,
+        rgba(74, 26, 107, 0.4) 0%,
+        transparent 65%
+      ),
+      radial-gradient(
+        50% 30% at 90% 5%,
+        rgba(201, 150, 26, 0.12) 0%,
+        transparent 60%
+      );
+    background-attachment: fixed;
+  }
+}
+
+/* welcome screen animated aurora */
+@keyframes aya-drift {
+  0% {
+    transform: translate3d(-6%, -4%, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6%, 4%, 0) scale(1.15);
+  }
+  100% {
+    transform: translate3d(-6%, -4%, 0) scale(1);
+  }
+}
+
+@keyframes aya-drift-slow {
+  0% {
+    transform: translate3d(5%, 3%, 0) scale(1.1);
+  }
+  50% {
+    transform: translate3d(-5%, -3%, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(5%, 3%, 0) scale(1.1);
+  }
+}
+
+@keyframes aya-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes aya-pulse-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-drift {
+  animation: aya-drift 14s ease-in-out infinite;
+}
+.animate-drift-slow {
+  animation: aya-drift-slow 18s ease-in-out infinite;
+}
+.animate-fade-up {
+  animation: aya-fade-up 0.5s ease-out both;
+}
+.animate-pulse-ring {
+  animation: aya-pulse-ring 2.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-drift,
+  .animate-drift-slow,
+  .animate-fade-up,
+  .animate-pulse-ring {
+    animation: none;
+  }
+}
