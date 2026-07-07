@@ -43,7 +43,6 @@ interface AyaContextValue {
   resetAll: () => void
   signUp: (email: string, password: string) => Promise<{ error: string | null; needsVerification?: boolean }>
   signIn: (email: string, password: string) => Promise<{ error: string | null; needsVerification?: boolean }>
-  signInWithGoogle: () => Promise<{ error: string | null }>
   signOut: () => Promise<void>
 }
 
@@ -161,12 +160,10 @@ export function AyaProvider({ children }: { children: ReactNode }) {
 
     const saveChecks = async () => {
       try {
-        // Delete old checks and insert new ones
-        await supabase.from('symptom_checks').delete().eq('user_id', user.id)
         if (checks.length > 0) {
           const { error } = await supabase
             .from('symptom_checks')
-            .insert(checks.map(c => ({ ...c, user_id: user.id })))
+            .upsert(checks.map(c => ({ ...c, user_id: user.id })), { onConflict: 'id' })
           if (error) console.error('Error saving checks:', error)
         }
       } catch (error) {
@@ -183,11 +180,10 @@ export function AyaProvider({ children }: { children: ReactNode }) {
 
     const saveMeds = async () => {
       try {
-        await supabase.from('medications').delete().eq('user_id', user.id)
         if (meds.length > 0) {
           const { error } = await supabase
             .from('medications')
-            .insert(meds.map(m => ({ ...m, user_id: user.id })))
+            .upsert(meds.map(m => ({ ...m, user_id: user.id })), { onConflict: 'id' })
           if (error) console.error('Error saving medications:', error)
         }
       } catch (error) {
@@ -299,23 +295,10 @@ export function AyaProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signInWithGoogle = useCallback(async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-        },
-      })
-      return { error: error?.message ?? null }
-    } catch (error) {
-      return { error: 'An unexpected error occurred with Google sign-in' }
-    }
-  }, [])
-
   const signOut = useCallback(async () => {
+    resetAll()
     await supabase.auth.signOut()
-  }, [])
+  }, [resetAll])
 
   const value = useMemo<AyaContextValue>(
     () => ({
@@ -335,7 +318,6 @@ export function AyaProvider({ children }: { children: ReactNode }) {
       resetAll,
       signUp,
       signIn,
-      signInWithGoogle,
       signOut,
     }),
     [
@@ -355,7 +337,6 @@ export function AyaProvider({ children }: { children: ReactNode }) {
       resetAll,
       signUp,
       signIn,
-      signInWithGoogle,
       signOut,
     ],
   )

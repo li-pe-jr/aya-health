@@ -8,7 +8,7 @@ import { useAya } from '@/lib/store'
 
 export function Welcome() {
   const navigate = useNavigate()
-  const { profile, user, loading, signIn, signUp, signInWithGoogle } = useAya()
+  const { profile, user, loading, signIn, signUp } = useAya()
   const [isLogin, setIsLogin] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -38,14 +38,6 @@ export function Welcome() {
     } else {
       // Sign in successful
       navigate(profile.onboarded ? '/home' : '/onboarding')
-    }
-  }
-
-  const handleGoogleSignIn = async () => {
-    setError('')
-    const result = await signInWithGoogle()
-    if (result.error) {
-      setError(result.error)
     }
   }
 
@@ -106,22 +98,6 @@ export function Welcome() {
             </div>
           ) : (
             <>
-              <Button
-                fullWidth
-                size="lg"
-                variant="outline"
-                onClick={handleGoogleSignIn}
-                className="border-white/20 bg-white/[0.05] hover:bg-white/[0.1]"
-              >
-                Continue with Google
-              </Button>
-
-              <div className="flex w-full items-center gap-3">
-                <div className="flex-1 h-px bg-white/10" />
-                <span className="text-xs text-cream/40">or</span>
-                <div className="flex-1 h-px bg-white/10" />
-              </div>
-
               {isLogin ? (
                 <form onSubmit={handleSubmit} className="w-full space-y-3">
                   <Input
