@@ -21,10 +21,6 @@ export function LogoMark({ size = 72, className }: LogoMarkProps) {
       className={className}
     >
       <defs>
-        <linearGradient id="ayaDisc" x1="0" y1="0" x2="0" y2="96">
-          <stop offset="0" stopColor="#22633c" />
-          <stop offset="1" stopColor="#123620" />
-        </linearGradient>
         <linearGradient id="ayaFern" x1="48" y1="14" x2="48" y2="84">
           <stop offset="0" stopColor="#e0b64d" />
           <stop offset="1" stopColor="#c9961a" />
@@ -34,7 +30,7 @@ export function LogoMark({ size = 72, className }: LogoMarkProps) {
         cx="48"
         cy="48"
         r="46"
-        fill="url(#ayaDisc)"
+        fill="#1A4D2E"
         stroke="#c9961a"
         strokeOpacity="0.5"
         strokeWidth="2"
@@ -60,6 +56,11 @@ export function LogoMark({ size = 72, className }: LogoMarkProps) {
           </g>
         )
       })}
+      {/* root loops at base */}
+      <g stroke="url(#ayaFern)" strokeWidth="3.4" strokeLinecap="round" fill="none">
+        <path d="M48 82C40 82 36 78 36 74C36 70 40 68 44 68" />
+        <path d="M48 82C56 82 60 78 60 74C60 70 56 68 52 68" />
+      </g>
     </svg>
   )
 }

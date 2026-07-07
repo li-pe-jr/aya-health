@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Stethoscope,
   LogOut,
+  Heart,
   type LucideIcon,
 } from 'lucide-react'
 import { Screen } from '@/components/Screen'
@@ -27,8 +28,12 @@ import {
   CONDITIONS,
   LANGUAGES,
   SEX_OPTIONS,
+  MARITAL_STATUS_OPTIONS,
+  RELIGION_OPTIONS,
   conditionLabel,
   languageLabel,
+  maritalStatusLabel,
+  religionLabel,
 } from '@/lib/constants'
 import { joinedLabel, relativeDay } from '@/lib/format'
 import { symptomById, TRIAGE_META } from '@/lib/symptoms'
@@ -36,6 +41,8 @@ import type {
   BiologicalSex,
   ConditionId,
   LanguageCode,
+  MaritalStatus,
+  Religion,
 } from '@/lib/types'
 import { cn } from '@/lib/cn'
 
@@ -43,7 +50,7 @@ type InfoKind = 'privacy' | 'about' | null
 
 export function Profile() {
   const navigate = useNavigate()
-  const { profile, checks, meds, reminder, setReminder, resetAll } = useAya()
+  const { profile, checks, meds, reminder, setReminder, signOut } = useAya()
 
   const [editing, setEditing] = useState(false)
   const [info, setInfo] = useState<InfoKind>(null)
@@ -51,8 +58,18 @@ export function Profile() {
   const initial = (profile.name || 'A').charAt(0).toUpperCase()
   const conditionText =
     profile.conditions.length > 0
-      ? profile.conditions.map(conditionLabel).join(', ')
+      ? profile.conditions.includes('other') && profile.conditionsOther
+        ? profile.conditionsOther
+        : profile.conditions.map(conditionLabel).join(', ')
       : 'None'
+  const maritalStatusText =
+    profile.maritalStatus === 'other' && profile.maritalStatusOther
+      ? profile.maritalStatusOther
+      : maritalStatusLabel(profile.maritalStatus)
+  const religionText =
+    profile.religion === 'other' && profile.religionOther
+      ? profile.religionOther
+      : religionLabel(profile.religion)
 
   return (
     <Screen withNav>
@@ -94,6 +111,19 @@ export function Profile() {
               ? `${meds.length} tracked`
               : 'None'
           }
+        />
+      </section>
+
+      <section className="mt-4 grid grid-cols-2 gap-3">
+        <SummaryCard
+          icon={Heart}
+          label="Marital Status"
+          value={maritalStatusText}
+        />
+        <SummaryCard
+          icon={Languages}
+          label="Religion"
+          value={religionText}
         />
       </section>
 
@@ -202,13 +232,13 @@ export function Profile() {
 
         <button
           type="button"
-          onClick={() => {
-            resetAll()
+          onClick={async () => {
+            await signOut()
             navigate('/', { replace: true })
           }}
           className="mx-auto mt-6 flex items-center gap-2 text-sm font-medium text-cream/45 hover:text-status-emergency"
         >
-          <LogOut size={16} /> Reset & sign out
+          <LogOut size={16} /> Sign out
         </button>
       </section>
 
@@ -221,13 +251,13 @@ export function Profile() {
         {info === 'privacy' ? (
           <div className="space-y-3 text-[15px] leading-relaxed text-cream/80">
             <p>
-              Aya keeps your health information on your own device. Nothing you
-              share here is sent to a server or seen by anyone else.
+              Aya securely stores your health information using Supabase. Your
+              data is encrypted and only accessible to you when you're signed in.
             </p>
             <p>
               You're always in control — use{' '}
-              <span className="text-cloud">Reset &amp; sign out</span> to clear
-              everything at any time.
+              <span className="text-cloud">Sign out</span> to end your session
+              at any time.
             </p>
           </div>
         ) : (
@@ -313,7 +343,12 @@ function EditProfileSheet({
   const [conditions, setConditions] = useState<ConditionId[]>(
     profile.conditions,
   )
+  const [conditionsOther, setConditionsOther] = useState(profile.conditionsOther || '')
   const [language, setLanguage] = useState<LanguageCode>(profile.language)
+  const [maritalStatus, setMaritalStatus] = useState<MaritalStatus>(profile.maritalStatus)
+  const [maritalStatusOther, setMaritalStatusOther] = useState(profile.maritalStatusOther || '')
+  const [religion, setReligion] = useState<Religion>(profile.religion)
+  const [religionOther, setReligionOther] = useState(profile.religionOther || '')
 
   // keep local form in sync when reopened
   const [seenOpen, setSeenOpen] = useState(false)
@@ -324,7 +359,12 @@ function EditProfileSheet({
     setBloodType(profile.bloodType)
     setSex(profile.sex)
     setConditions(profile.conditions)
+    setConditionsOther(profile.conditionsOther || '')
     setLanguage(profile.language)
+    setMaritalStatus(profile.maritalStatus)
+    setMaritalStatusOther(profile.maritalStatusOther || '')
+    setReligion(profile.religion)
+    setReligionOther(profile.religionOther || '')
   }
   if (!open && seenOpen) setSeenOpen(false)
 
@@ -340,7 +380,12 @@ function EditProfileSheet({
       bloodType: bloodType.trim(),
       sex,
       conditions,
+      conditionsOther: conditionsOther.trim(),
       language,
+      maritalStatus,
+      maritalStatusOther: maritalStatusOther.trim(),
+      religion,
+      religionOther: religionOther.trim(),
     })
     onClose()
   }
@@ -407,6 +452,15 @@ function EditProfileSheet({
               </button>
             ))}
           </div>
+          {conditions.includes('other') && (
+            <Input
+              id="conditions-other"
+              className="mt-3"
+              placeholder="Please specify"
+              value={conditionsOther}
+              onChange={(e) => setConditionsOther(e.target.value)}
+            />
+          )}
         </div>
 
         <div>
@@ -425,6 +479,60 @@ function EditProfileSheet({
               </button>
             ))}
           </div>
+        </div>
+
+        <div>
+          <span className="mb-2 block text-sm font-medium text-cream/80">
+            Marital Status
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {MARITAL_STATUS_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setMaritalStatus(opt.value)}
+                className={pillClass(maritalStatus === opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {maritalStatus === 'other' && (
+            <Input
+              id="marital-status-other"
+              className="mt-3"
+              placeholder="Please specify"
+              value={maritalStatusOther}
+              onChange={(e) => setMaritalStatusOther(e.target.value)}
+            />
+          )}
+        </div>
+
+        <div>
+          <span className="mb-2 block text-sm font-medium text-cream/80">
+            Religion
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {RELIGION_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setReligion(opt.value)}
+                className={pillClass(religion === opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {religion === 'other' && (
+            <Input
+              id="religion-other"
+              className="mt-3"
+              placeholder="Please specify"
+              value={religionOther}
+              onChange={(e) => setReligionOther(e.target.value)}
+            />
+          )}
         </div>
 
         <Button fullWidth onClick={save}>

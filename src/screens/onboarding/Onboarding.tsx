@@ -7,15 +7,17 @@ import { Input } from '@/components/Input'
 import { Chip } from '@/components/Chip'
 import { StepDots } from '@/components/Progress'
 import { cn } from '@/lib/cn'
-import { CONDITIONS, LANGUAGES, SEX_OPTIONS } from '@/lib/constants'
+import { CONDITIONS, LANGUAGES, SEX_OPTIONS, MARITAL_STATUS_OPTIONS, RELIGION_OPTIONS } from '@/lib/constants'
 import { useAya } from '@/lib/store'
 import type {
   BiologicalSex,
   ConditionId,
   LanguageCode,
+  MaritalStatus,
+  Religion,
 } from '@/lib/types'
 
-const TOTAL = 4
+const TOTAL = 5
 
 export function Onboarding() {
   const navigate = useNavigate()
@@ -26,7 +28,12 @@ export function Onboarding() {
   const [age, setAge] = useState('')
   const [sex, setSex] = useState<BiologicalSex>('unspecified')
   const [conditions, setConditions] = useState<ConditionId[]>([])
+  const [conditionsOther, setConditionsOther] = useState('')
   const [language, setLanguage] = useState<LanguageCode>('en')
+  const [maritalStatus, setMaritalStatus] = useState<MaritalStatus>('prefer-not-to-say')
+  const [maritalStatusOther, setMaritalStatusOther] = useState('')
+  const [religion, setReligion] = useState<Religion>('prefer-not-to-say')
+  const [religionOther, setReligionOther] = useState('')
 
   const toggleCondition = (id: ConditionId) => {
     setConditions((prev) =>
@@ -40,7 +47,12 @@ export function Onboarding() {
       age,
       sex,
       conditions,
+      conditionsOther,
       language,
+      maritalStatus,
+      maritalStatusOther,
+      religion,
+      religionOther,
     })
     navigate('/home', { replace: true })
   }
@@ -56,7 +68,7 @@ export function Onboarding() {
   }
 
   const canContinue = step === 1 ? name.trim().length > 0 : true
-  const canSkip = step === 3 || step === 4
+  const canSkip = step === 3 || step === 4 || step === 5
 
   return (
     <Screen contentClassName="pt-4">
@@ -104,12 +116,26 @@ export function Onboarding() {
         {step === 3 && (
           <StepConditions
             conditions={conditions}
+            conditionsOther={conditionsOther}
+            setConditionsOther={setConditionsOther}
             toggle={toggleCondition}
             clear={() => setConditions([])}
           />
         )}
         {step === 4 && (
           <StepLanguage language={language} setLanguage={setLanguage} />
+        )}
+        {step === 5 && (
+          <StepPersonal
+            maritalStatus={maritalStatus}
+            setMaritalStatus={setMaritalStatus}
+            maritalStatusOther={maritalStatusOther}
+            setMaritalStatusOther={setMaritalStatusOther}
+            religion={religion}
+            setReligion={setReligion}
+            religionOther={religionOther}
+            setReligionOther={setReligionOther}
+          />
         )}
       </div>
 
@@ -236,14 +262,19 @@ function StepAbout({
 
 function StepConditions({
   conditions,
+  conditionsOther,
+  setConditionsOther,
   toggle,
   clear,
 }: {
   conditions: ConditionId[]
+  conditionsOther: string
+  setConditionsOther: (v: string) => void
   toggle: (id: ConditionId) => void
   clear: () => void
 }) {
   const none = conditions.length === 0
+  const showOtherInput = conditions.includes('other')
   return (
     <div>
       <StepHeading
@@ -260,6 +291,131 @@ function StepConditions({
           />
         ))}
         <Chip label="None" selected={none} onClick={clear} />
+      </div>
+      {showOtherInput && (
+        <Input
+          id="conditions-other"
+          className="mt-3"
+          placeholder="Please specify"
+          value={conditionsOther}
+          onChange={(e) => setConditionsOther(e.target.value)}
+        />
+      )}
+    </div>
+  )
+}
+
+function StepPersonal({
+  maritalStatus,
+  setMaritalStatus,
+  maritalStatusOther,
+  setMaritalStatusOther,
+  religion,
+  setReligion,
+  religionOther,
+  setReligionOther,
+}: {
+  maritalStatus: MaritalStatus
+  setMaritalStatus: (v: MaritalStatus) => void
+  maritalStatusOther: string
+  setMaritalStatusOther: (v: string) => void
+  religion: Religion
+  setReligion: (v: Religion) => void
+  religionOther: string
+  setReligionOther: (v: string) => void
+}) {
+  return (
+    <div>
+      <StepHeading
+        title="About you"
+        sub="This helps Aya understand you better. All optional."
+      />
+      <div className="space-y-6">
+        <div>
+          <span className="mb-2 block text-sm font-medium text-cream/80">
+            Marital status
+          </span>
+          <div className="grid gap-2.5">
+            {MARITAL_STATUS_OPTIONS.map((opt) => {
+              const active = maritalStatus === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setMaritalStatus(opt.value)}
+                  className={cn(
+                    'flex h-14 items-center justify-between rounded-2xl border px-4 text-left text-[15px] font-medium transition-all',
+                    active
+                      ? 'border-gold bg-gold/12 text-cloud'
+                      : 'border-white/12 bg-white/[0.03] text-cream/80 hover:border-gold/40',
+                  )}
+                >
+                  {opt.label}
+                  <span
+                    className={cn(
+                      'flex h-5 w-5 items-center justify-center rounded-full border',
+                      active ? 'border-gold bg-gold' : 'border-white/25',
+                    )}
+                  >
+                    {active && <Check size={13} className="text-obsidian" />}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          {maritalStatus === 'other' && (
+            <Input
+              id="marital-status-other"
+              className="mt-3"
+              placeholder="Please specify"
+              value={maritalStatusOther}
+              onChange={(e) => setMaritalStatusOther(e.target.value)}
+            />
+          )}
+        </div>
+
+        <div>
+          <span className="mb-2 block text-sm font-medium text-cream/80">
+            Religion
+          </span>
+          <div className="grid gap-2.5">
+            {RELIGION_OPTIONS.map((opt) => {
+              const active = religion === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setReligion(opt.value)}
+                  className={cn(
+                    'flex h-14 items-center justify-between rounded-2xl border px-4 text-left text-[15px] font-medium transition-all',
+                    active
+                      ? 'border-gold bg-gold/12 text-cloud'
+                      : 'border-white/12 bg-white/[0.03] text-cream/80 hover:border-gold/40',
+                  )}
+                >
+                  {opt.label}
+                  <span
+                    className={cn(
+                      'flex h-5 w-5 items-center justify-center rounded-full border',
+                      active ? 'border-gold bg-gold' : 'border-white/25',
+                    )}
+                  >
+                    {active && <Check size={13} className="text-obsidian" />}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          {religion === 'other' && (
+            <Input
+              id="religion-other"
+              className="mt-3"
+              placeholder="Please specify"
+              value={religionOther}
+              onChange={(e) => setReligionOther(e.target.value)}
+            />
+          )}
+        </div>
       </div>
     </div>
   )
@@ -316,6 +472,9 @@ function StepLanguage({
           )
         })}
       </div>
+      <p className="mt-4 text-xs text-cream/50">
+        Full language support coming soon
+      </p>
     </div>
   )
 }

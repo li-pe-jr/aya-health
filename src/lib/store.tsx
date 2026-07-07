@@ -8,31 +8,22 @@ import {
   type ReactNode,
 } from 'react'
 import type { Medication, SymptomCheck, UserProfile } from './types'
-
-const PROFILE_KEY = 'aya.profile.v1'
-const CHECKS_KEY = 'aya.checks.v1'
-const REMINDER_KEY = 'aya.reminder.v1'
-const MEDS_KEY = 'aya.meds.v1'
+import { supabase } from './supabase'
 
 export const EMPTY_PROFILE: UserProfile = {
   name: '',
   age: '',
   sex: 'unspecified',
   conditions: [],
+  conditionsOther: '',
   language: 'en',
   bloodType: '',
+  maritalStatus: 'prefer-not-to-say',
+  maritalStatusOther: '',
+  religion: 'prefer-not-to-say',
+  religionOther: '',
   joinedAt: 0,
   onboarded: false,
-}
-
-function load<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key)
-    if (!raw) return fallback
-    return JSON.parse(raw) as T
-  } catch {
-    return fallback
-  }
 }
 
 interface AyaContextValue {
@@ -41,6 +32,8 @@ interface AyaContextValue {
   meds: Medication[]
   reminder: boolean
   ready: boolean
+  user: any
+  loading: boolean
   updateProfile: (patch: Partial<UserProfile>) => void
   completeOnboarding: (patch: Partial<UserProfile>) => void
   addCheck: (check: SymptomCheck) => void
@@ -48,6 +41,10 @@ interface AyaContextValue {
   removeMed: (id: string) => void
   setReminder: (value: boolean) => void
   resetAll: () => void
+  signUp: (email: string, password: string) => Promise<{ error: string | null; needsVerification?: boolean }>
+  signIn: (email: string, password: string) => Promise<{ error: string | null; needsVerification?: boolean }>
+  signInWithGoogle: () => Promise<{ error: string | null }>
+  signOut: () => Promise<void>
 }
 
 const AyaContext = createContext<AyaContextValue | null>(null)
@@ -58,30 +55,166 @@ export function AyaProvider({ children }: { children: ReactNode }) {
   const [meds, setMeds] = useState<Medication[]>([])
   const [reminder, setReminderState] = useState(false)
   const [ready, setReady] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setProfile(load<UserProfile>(PROFILE_KEY, EMPTY_PROFILE))
-    setChecks(load<SymptomCheck[]>(CHECKS_KEY, []))
-    setMeds(load<Medication[]>(MEDS_KEY, []))
-    setReminderState(load<boolean>(REMINDER_KEY, false))
-    setReady(true)
+    // Check for active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
+  // Load user data from Supabase when user changes
   useEffect(() => {
-    if (ready) localStorage.setItem(PROFILE_KEY, JSON.stringify(profile))
-  }, [profile, ready])
+    if (!user) {
+      setProfile(EMPTY_PROFILE)
+      setChecks([])
+      setMeds([])
+      setReminderState(false)
+      setReady(true)
+      return
+    }
 
-  useEffect(() => {
-    if (ready) localStorage.setItem(CHECKS_KEY, JSON.stringify(checks))
-  }, [checks, ready])
+    const loadUserData = async () => {
+      try {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
 
-  useEffect(() => {
-    if (ready) localStorage.setItem(MEDS_KEY, JSON.stringify(meds))
-  }, [meds, ready])
+        if (profileData) {
+          setProfile(profileData)
+        }
 
+        const { data: checksData } = await supabase
+          .from('symptom_checks')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(50)
+
+        if (checksData) {
+          setChecks(checksData)
+        }
+
+        const { data: medsData } = await supabase
+          .from('medications')
+          .select('*')
+          .eq('user_id', user.id)
+
+        if (medsData) {
+          setMeds(medsData)
+        }
+
+        const { data: reminderData } = await supabase
+          .from('settings')
+          .select('reminder_enabled')
+          .eq('user_id', user.id)
+          .single()
+
+        if (reminderData) {
+          setReminderState(reminderData.reminder_enabled)
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error)
+      } finally {
+        setReady(true)
+      }
+    }
+
+    loadUserData()
+  }, [user])
+
+  // Save profile to Supabase
   useEffect(() => {
-    if (ready) localStorage.setItem(REMINDER_KEY, JSON.stringify(reminder))
-  }, [reminder, ready])
+    if (!ready || !user) return
+
+    const saveProfile = async () => {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .upsert({ id: user.id, ...profile })
+        if (error) console.error('Error saving profile:', error)
+      } catch (error) {
+        console.error('Error saving profile:', error)
+      }
+    }
+
+    saveProfile()
+  }, [profile, ready, user])
+
+  // Save checks to Supabase
+  useEffect(() => {
+    if (!ready || !user) return
+
+    const saveChecks = async () => {
+      try {
+        // Delete old checks and insert new ones
+        await supabase.from('symptom_checks').delete().eq('user_id', user.id)
+        if (checks.length > 0) {
+          const { error } = await supabase
+            .from('symptom_checks')
+            .insert(checks.map(c => ({ ...c, user_id: user.id })))
+          if (error) console.error('Error saving checks:', error)
+        }
+      } catch (error) {
+        console.error('Error saving checks:', error)
+      }
+    }
+
+    saveChecks()
+  }, [checks, ready, user])
+
+  // Save medications to Supabase
+  useEffect(() => {
+    if (!ready || !user) return
+
+    const saveMeds = async () => {
+      try {
+        await supabase.from('medications').delete().eq('user_id', user.id)
+        if (meds.length > 0) {
+          const { error } = await supabase
+            .from('medications')
+            .insert(meds.map(m => ({ ...m, user_id: user.id })))
+          if (error) console.error('Error saving medications:', error)
+        }
+      } catch (error) {
+        console.error('Error saving medications:', error)
+      }
+    }
+
+    saveMeds()
+  }, [meds, ready, user])
+
+  // Save reminder to Supabase
+  useEffect(() => {
+    if (!ready || !user) return
+
+    const saveReminder = async () => {
+      try {
+        const { error } = await supabase
+          .from('settings')
+          .upsert({ user_id: user.id, reminder_enabled: reminder })
+        if (error) console.error('Error saving reminder:', error)
+      } catch (error) {
+        console.error('Error saving reminder:', error)
+      }
+    }
+
+    saveReminder()
+  }, [reminder, ready, user])
 
   const updateProfile = useCallback((patch: Partial<UserProfile>) => {
     setProfile((prev) => ({ ...prev, ...patch }))
@@ -119,6 +252,71 @@ export function AyaProvider({ children }: { children: ReactNode }) {
     setReminderState(false)
   }, [])
 
+  const signUp = useCallback(async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      })
+      if (error) {
+        if (error.message.includes('already registered')) {
+          return { error: 'An account with this email already exists. Please sign in instead.' }
+        }
+        return { error: error.message }
+      }
+      // If sign up successful but email not confirmed
+      if (data.user && !data.user.email_confirmed_at) {
+        return { error: null, needsVerification: true }
+      }
+      return { error: null }
+    } catch (error) {
+      return { error: 'An unexpected error occurred' }
+    }
+  }, [])
+
+  const signIn = useCallback(async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          return { error: 'Invalid email or password. Please check your credentials and try again.' }
+        }
+        if (error.message.includes('Email not confirmed')) {
+          return { error: 'Please check your email for the confirmation link to verify your account.', needsVerification: true }
+        }
+        return { error: error.message }
+      }
+      // Check if email is verified
+      if (data.user && !data.user.email_confirmed_at) {
+        return { error: 'Please check your email for the confirmation link to verify your account.', needsVerification: true }
+      }
+      return { error: null }
+    } catch (error) {
+      return { error: 'An unexpected error occurred' }
+    }
+  }, [])
+
+  const signInWithGoogle = useCallback(async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      })
+      return { error: error?.message ?? null }
+    } catch (error) {
+      return { error: 'An unexpected error occurred with Google sign-in' }
+    }
+  }, [])
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut()
+  }, [])
+
   const value = useMemo<AyaContextValue>(
     () => ({
       profile,
@@ -126,6 +324,8 @@ export function AyaProvider({ children }: { children: ReactNode }) {
       meds,
       reminder,
       ready,
+      user,
+      loading,
       updateProfile,
       completeOnboarding,
       addCheck,
@@ -133,6 +333,10 @@ export function AyaProvider({ children }: { children: ReactNode }) {
       removeMed,
       setReminder,
       resetAll,
+      signUp,
+      signIn,
+      signInWithGoogle,
+      signOut,
     }),
     [
       profile,
@@ -140,6 +344,8 @@ export function AyaProvider({ children }: { children: ReactNode }) {
       meds,
       reminder,
       ready,
+      user,
+      loading,
       updateProfile,
       completeOnboarding,
       addCheck,
@@ -147,6 +353,10 @@ export function AyaProvider({ children }: { children: ReactNode }) {
       removeMed,
       setReminder,
       resetAll,
+      signUp,
+      signIn,
+      signInWithGoogle,
+      signOut,
     ],
   )
 

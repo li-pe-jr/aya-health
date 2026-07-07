@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Search, SearchX, Smile } from 'lucide-react'
 import { Screen } from '@/components/Screen'
 import { Button } from '@/components/Button'
+import { Input } from '@/components/Input'
 import { EmptyState } from '@/components/Feedback'
 import { SYMPTOMS } from '@/lib/symptoms'
 import { cn } from '@/lib/cn'
@@ -10,7 +11,7 @@ import { useSymptomFlow } from './flow'
 
 export function SymptomStep1() {
   const navigate = useNavigate()
-  const { selected, toggle, reset } = useSymptomFlow()
+  const { selected, toggle, reset, otherSymptom, setOtherSymptom } = useSymptomFlow()
   const [query, setQuery] = useState('')
 
   const filtered = useMemo(() => {
@@ -23,6 +24,8 @@ export function SymptomStep1() {
     reset()
     navigate('/symptoms/result', { state: { fine: true } })
   }
+
+  const showOtherInput = selected.includes('other')
 
   return (
     <Screen withNav>
@@ -60,61 +63,73 @@ export function SymptomStep1() {
       </div>
 
       {/* grid */}
-      {filtered.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3">
-          {filtered.map((s) => {
-            const active = selected.includes(s.id)
-            const Icon = s.icon
-            return (
-              <button
-                key={s.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => toggle(s.id)}
-                className={cn(
-                  'flex items-center gap-3 rounded-2xl border p-3.5 text-left transition-all active:scale-[0.98]',
-                  active
-                    ? 'border-gold bg-gold/12'
-                    : 'border-white/10 bg-white/[0.03] hover:border-gold/40',
-                )}
-              >
-                <span
+      <div className="flex-1 overflow-y-auto pb-4">
+        {filtered.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3">
+            {filtered.map((s) => {
+              const active = selected.includes(s.id)
+              const Icon = s.icon
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => toggle(s.id)}
                   className={cn(
-                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors',
-                    active ? 'bg-gold/20 text-gold' : 'bg-forest/40 text-cream/80',
+                    'flex items-center gap-3 rounded-2xl border p-3.5 text-left transition-all active:scale-[0.98]',
+                    active
+                      ? 'border-gold bg-gold/12'
+                      : 'border-white/10 bg-white/[0.03] hover:border-gold/40',
                   )}
                 >
-                  <Icon size={20} strokeWidth={1.9} />
-                </span>
-                <span className="text-[14px] font-medium leading-tight text-cloud">
-                  {s.label}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      ) : (
-        <EmptyState
-          className="mt-4"
-          icon={<SearchX size={26} />}
-          title="No matches"
-          description={`Aya couldn't find "${query.trim()}". Try another word, or pick from the list.`}
-        />
-      )}
+                  <span
+                    className={cn(
+                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors',
+                      active ? 'bg-gold/20 text-gold' : 'bg-forest/40 text-cream/80',
+                    )}
+                  >
+                    <Icon size={20} strokeWidth={1.9} />
+                  </span>
+                  <span className="text-[14px] font-medium leading-tight text-cloud">
+                    {s.label}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        ) : (
+          <EmptyState
+            className="mt-4"
+            icon={<SearchX size={26} />}
+            title="No matches"
+            description={`Aya couldn't find "${query.trim()}". Try another word, or pick from the list.`}
+          />
+        )}
 
-      {/* feeling fine */}
-      <button
-        type="button"
-        onClick={goFine}
-        className="mx-auto mt-6 inline-flex items-center gap-2 text-sm text-cream/55 hover:text-cloud"
-      >
-        <Smile size={16} /> I feel fine, just checking in
-      </button>
+        {showOtherInput && (
+          <Input
+            id="symptom-other"
+            className="mt-3"
+            placeholder="Please specify your symptom"
+            value={otherSymptom}
+            onChange={(e) => setOtherSymptom(e.target.value)}
+          />
+        )}
 
-      <div className="mt-5">
+        {/* feeling fine */}
+        <button
+          type="button"
+          onClick={goFine}
+          className="mx-auto mt-6 inline-flex items-center gap-2 text-sm text-cream/55 hover:text-cloud"
+        >
+          <Smile size={16} /> I feel fine, just checking in
+        </button>
+      </div>
+
+      <div className="sticky bottom-0 mt-4 bg-gradient-to-t from-[#0a0f0d] via-[#0a0f0d] to-transparent pt-4">
         <Button
           fullWidth
-          disabled={selected.length === 0}
+          disabled={selected.length === 0 || (showOtherInput && !otherSymptom.trim())}
           rightIcon={<ArrowRight size={18} />}
           onClick={() => navigate('/symptoms/questions')}
         >

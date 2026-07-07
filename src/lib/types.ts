@@ -9,13 +9,22 @@ export type ConditionId =
   | 'sickle-cell'
   | 'other'
 
+export type MaritalStatus = 'single' | 'married' | 'divorced' | 'widowed' | 'prefer-not-to-say' | 'other'
+
+export type Religion = 'christianity' | 'islam' | 'traditional-african' | 'other' | 'prefer-not-to-say'
+
 export interface UserProfile {
   name: string
   age: string
   sex: BiologicalSex
   conditions: ConditionId[]
+  conditionsOther?: string
   language: LanguageCode
   bloodType: string
+  maritalStatus: MaritalStatus
+  maritalStatusOther?: string
+  religion: Religion
+  religionOther?: string
   joinedAt: number
   onboarded: boolean
 }

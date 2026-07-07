@@ -41,6 +41,7 @@ export const SYMPTOMS: Symptom[] = [
   },
   { id: 'nausea', label: 'Nausea', icon: Salad },
   { id: 'rash', label: 'Rash', icon: Sparkles },
+  { id: 'other', label: 'Other', icon: Sparkles },
 ]
 
 export function symptomById(id: string): Symptom | undefined {
