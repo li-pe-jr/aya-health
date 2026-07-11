@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { Logo } from '@/components/Logo'
@@ -41,6 +41,13 @@ export function Welcome() {
     }
   }
 
+  // Redirect authenticated users away from the Welcome screen
+  useEffect(() => {
+    if (!loading && user) {
+      navigate(profile.onboarded ? '/home' : '/onboarding', { replace: true })
+    }
+  }, [user, loading, profile.onboarded, navigate])
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -49,11 +56,6 @@ export function Welcome() {
     )
   }
 
-  if (user) {
-    // User is already logged in
-    navigate(profile.onboarded ? '/home' : '/onboarding')
-    return null
-  }
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden">

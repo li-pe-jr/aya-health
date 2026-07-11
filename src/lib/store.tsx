@@ -253,6 +253,12 @@ export function AyaProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          // Always redirect back to this app's origin after email confirmation,
+          // regardless of what 'Site URL' is set to in the Supabase dashboard.
+          // This is critical in production where the deployed URL differs from localhost.
+          emailRedirectTo: `${window.location.origin}/`,
+        },
       })
       if (error) {
         if (error.message.includes('already registered')) {
