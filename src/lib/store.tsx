@@ -41,8 +41,8 @@ interface AyaContextValue {
   removeMed: (id: string) => void
   setReminder: (value: boolean) => void
   resetAll: () => void
-  signUp: (email: string, password: string) => Promise<{ error: string | null; needsVerification?: boolean }>
-  signIn: (email: string, password: string) => Promise<{ error: string | null; needsVerification?: boolean }>
+  signUp: (email: string, password: string) => Promise<{ error: string | null }>
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
 }
 
@@ -253,12 +253,6 @@ export function AyaProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          // Always redirect back to this app's origin after email confirmation,
-          // regardless of what 'Site URL' is set to in the Supabase dashboard.
-          // This is critical in production where the deployed URL differs from localhost.
-          emailRedirectTo: `${window.location.origin}/`,
-        },
       })
       if (error) {
         if (error.message.includes('already registered')) {
@@ -266,9 +260,15 @@ export function AyaProvider({ children }: { children: ReactNode }) {
         }
         return { error: error.message }
       }
-      // If sign up successful but email not confirmed
-      if (data.user && !data.user.email_confirmed_at) {
-        return { error: null, needsVerification: true }
+      // Auto-signin immediately after successful signup
+      if (data.user) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        if (signInError) {
+          return { error: 'Account created but failed to sign in. Please try signing in manually.' }
+        }
       }
       return { error: null }
     } catch (error) {
@@ -278,7 +278,7 @@ export function AyaProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
@@ -286,14 +286,10 @@ export function AyaProvider({ children }: { children: ReactNode }) {
         if (error.message.includes('Invalid login credentials')) {
           return { error: 'Invalid email or password. Please check your credentials and try again.' }
         }
-        if (error.message.includes('Email not confirmed')) {
-          return { error: 'Please check your email for the confirmation link to verify your account.', needsVerification: true }
+        if (error.message.includes('User not found')) {
+          return { error: 'No account found with this email. Please create an account first.' }
         }
         return { error: error.message }
-      }
-      // Check if email is verified
-      if (data.user && !data.user.email_confirmed_at) {
-        return { error: 'Please check your email for the confirmation link to verify your account.', needsVerification: true }
       }
       return { error: null }
     } catch (error) {
