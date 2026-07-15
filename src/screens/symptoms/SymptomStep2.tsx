@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check } from 'lucide-react'
 import { Screen } from '@/components/Screen'
 import { ProgressBar } from '@/components/Progress'
-import { FOLLOW_UP_QUESTIONS, SYMPTOM_SPECIFIC_QUESTIONS } from '@/lib/symptoms'
+import { FOLLOW_UP_QUESTIONS, SYMPTOM_SPECIFIC_QUESTIONS, type FollowUpOption } from '@/lib/symptoms'
 import { cn } from '@/lib/cn'
 import { useSymptomFlow } from './flow'
 
@@ -117,7 +117,7 @@ export function SymptomStep2() {
         </h1>
 
         <div className="space-y-3">
-          {question.options.map((opt) => {
+          {question.options.map((opt: FollowUpOption) => {
             const active = current === opt.value
             return (
               <button

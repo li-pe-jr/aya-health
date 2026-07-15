@@ -245,7 +245,7 @@ function getSeverityCode(answers: Record<string, string>): string {
   }
   
   // Find the highest severity code
-  for (const [questionId, answer] of Object.entries(severityMap)) {
+  for (const [, answer] of Object.entries(severityMap)) {
     if (answer && codeMap[answer]) {
       return codeMap[answer]
     }
