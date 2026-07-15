@@ -37,6 +37,7 @@ interface AyaContextValue {
   updateProfile: (patch: Partial<UserProfile>) => void
   completeOnboarding: (patch: Partial<UserProfile>) => void
   addCheck: (check: SymptomCheck) => void
+  addWellnessCheckin: () => void
   addMed: (med: Medication) => void
   removeMed: (id: string) => void
   setReminder: (value: boolean) => void
@@ -229,6 +230,18 @@ export function AyaProvider({ children }: { children: ReactNode }) {
     setChecks((prev) => [check, ...prev].slice(0, 50))
   }, [])
 
+  const addWellnessCheckin = useCallback(() => {
+    const check: SymptomCheck = {
+      id: `chk_${Date.now()}`,
+      createdAt: Date.now(),
+      symptomIds: [],
+      answers: {},
+      level: 'home',
+      status: 'well',
+    }
+    setChecks((prev) => [check, ...prev].slice(0, 50))
+  }, [])
+
   const addMed = useCallback((med: Medication) => {
     setMeds((prev) => [...prev, med])
   }, [])
@@ -314,6 +327,7 @@ export function AyaProvider({ children }: { children: ReactNode }) {
       updateProfile,
       completeOnboarding,
       addCheck,
+      addWellnessCheckin,
       addMed,
       removeMed,
       setReminder,
@@ -333,6 +347,7 @@ export function AyaProvider({ children }: { children: ReactNode }) {
       updateProfile,
       completeOnboarding,
       addCheck,
+      addWellnessCheckin,
       addMed,
       removeMed,
       setReminder,

@@ -1,0 +1,18 @@
+export const NOTIFICATION_CONTENT = {
+  medication_reminder: 'Time for your {medicationName}. Taking it consistently makes the biggest difference — do not skip today.',
+  morning_diabetic: 'Good morning {name}. Before breakfast — check your blood sugar. Starting the day informed helps you stay in control.',
+  morning_hypertensive: 'Good morning {name}. Have you taken your blood pressure medication today? Do not let a busy morning push it aside.',
+  morning_asthmatic: 'Good morning {name}. Keep your inhaler close today. How is your breathing feeling this morning?',
+  morning_sickle_cell: 'Good morning {name}. Stay warm stay hydrated and take it one step at a time today.',
+  morning_pregnant: 'Good morning {name}. Have you taken your antenatal vitamins today? Small consistent habits make a real difference.',
+  morning_healthy: 'Good morning {name}. How are you feeling today?',
+  no_checkin_3days: 'Aya has not heard from you in a few days. How are you feeling? A quick check-in takes less than a minute.',
+  post_symptom_24h: 'Yesterday you were not feeling your best. How are you doing today? Tap here to do a quick check-in.',
+  post_symptom_clinic: 'You were advised to seek care yesterday. Aya hopes you were able to get the help you needed. How are you feeling now?',
+  weekly_wellness: 'This week — try adding one fruit to your day. Small changes add up. Your body notices.',
+  exercise_general: 'Even 20 minutes of walking today supports your heart your mood and your immune system. Your body is made to move.',
+  exercise_diabetic: 'A short walk after meals can help manage blood sugar naturally. Even 10 minutes counts — your body will thank you.',
+  exercise_hypertensive: 'Gentle regular movement is one of the most effective ways to support healthy blood pressure. A walk today is a good place to start.',
+  hydration: 'Have you had enough water today? Aim for at least 8 glasses. Dehydration affects energy focus and your immune system.',
+  fruit_nudge: 'Try some fruit today — pawpaw mango banana or orange. Simple local and genuinely good for you.',
+}

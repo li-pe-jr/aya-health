@@ -21,6 +21,7 @@ import {
   triage,
   type TriageMeta,
 } from '@/lib/symptoms'
+import { getResponse } from '@/lib/responses'
 import type { SymptomCheck, TriageLevel } from '@/lib/types'
 import { useSymptomFlow } from './flow'
 
@@ -45,20 +46,37 @@ const FINE_META: TriageMeta = {
   ],
 }
 
+// Helper function to get feeling good response key based on profile
+function getFeelingGoodResponseKey(conditions: string[]): string {
+  if (conditions.includes('diabetes')) return 'FEELING_GOOD_D'
+  if (conditions.includes('hypertension')) return 'FEELING_GOOD_HT'
+  if (conditions.includes('asthma')) return 'FEELING_GOOD_AS'
+  if (conditions.includes('sickle-cell')) return 'FEELING_GOOD_SC'
+  if (conditions.includes('pregnancy')) return 'FEELING_GOOD_P'
+  return 'FEELING_GOOD_H'
+}
+
 export function SymptomResult() {
   const navigate = useNavigate()
   const location = useLocation()
   const isFine = Boolean((location.state as { fine?: boolean } | null)?.fine)
   const { selected, answers, reset } = useSymptomFlow()
-  const { addCheck, reminder, setReminder } = useAya()
+  const { addCheck, reminder, setReminder, profile } = useAya()
 
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
 
-  const level: TriageLevel = useMemo(
-    () => (isFine ? 'home' : triage(selected, answers)),
-    [isFine, selected, answers],
-  )
+  const triageResult = useMemo(() => {
+    if (isFine) {
+      const responseKey = getFeelingGoodResponseKey(profile.conditions || [])
+      return { level: 'home' as TriageLevel, responseKey }
+    }
+    return triage(selected, answers, profile)
+  }, [isFine, selected, answers, profile])
+
+  const level = triageResult.level
+  const responseKey = triageResult.responseKey
+  const response = getResponse(responseKey)
   const meta = isFine ? FINE_META : TRIAGE_META[level]
 
   // Guard against a stray refresh with no data.
@@ -88,6 +106,8 @@ export function SymptomResult() {
       symptomIds: selected,
       answers,
       level,
+      responseKey,
+      status: isFine ? 'well' : 'symptom',
     }
     addCheck(check)
     setSaved(true)
@@ -146,35 +166,37 @@ export function SymptomResult() {
           {meta.title}
         </span>
         <h1 className="mt-3 font-display text-[24px] font-bold leading-snug text-cloud">
-          {meta.headline}
+          {isFine ? meta.headline : response.headline}
         </h1>
       </div>
 
       {/* Aya's explanation */}
       <p className="mt-4 text-center text-[15px] leading-relaxed text-cream/80">
-        {meta.explanation}
+        {isFine ? meta.explanation : response.explanation}
       </p>
 
       {/* what to do next */}
       <section className="mt-7">
         <h2 className="mb-3 text-sm font-semibold text-cream/80">
-          What to do next
+          What to do now
         </h2>
-        <ol className="space-y-2.5">
-          {meta.steps.map((step, i) => (
-            <li
-              key={step}
-              className="flex items-start gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3.5"
-            >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gold/15 text-sm font-bold text-gold">
-                {i + 1}
-              </span>
-              <span className="pt-0.5 text-[15px] leading-relaxed text-cream/85">
-                {step}
-              </span>
-            </li>
-          ))}
-        </ol>
+        <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+          <p className="text-[15px] leading-relaxed text-cream/85">
+            {isFine ? meta.steps.join(' ') : response.doNow}
+          </p>
+        </div>
+      </section>
+
+      {/* when to get more help */}
+      <section className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold text-cream/80">
+          When to get more help
+        </h2>
+        <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+          <p className="text-[15px] leading-relaxed text-cream/85">
+            {isFine ? 'Check in with Aya whenever something feels off.' : response.escalate}
+          </p>
+        </div>
       </section>
 
       {/* shareable summary */}

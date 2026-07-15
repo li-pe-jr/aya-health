@@ -1,39 +1,92 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check } from 'lucide-react'
 import { Screen } from '@/components/Screen'
 import { ProgressBar } from '@/components/Progress'
-import { FOLLOW_UP_QUESTIONS } from '@/lib/symptoms'
+import { FOLLOW_UP_QUESTIONS, SYMPTOM_SPECIFIC_QUESTIONS } from '@/lib/symptoms'
 import { cn } from '@/lib/cn'
 import { useSymptomFlow } from './flow'
 
 export function SymptomStep2() {
   const navigate = useNavigate()
   const { selected, answers, setAnswer } = useSymptomFlow()
-  const [index, setIndex] = useState(0)
+  const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null)
 
   // Guard: no symptoms means the flow wasn't started properly.
   useEffect(() => {
     if (selected.length === 0) navigate('/symptoms', { replace: true })
   }, [selected.length, navigate])
 
-  const total = FOLLOW_UP_QUESTIONS.length
-  const question = FOLLOW_UP_QUESTIONS[index]
+  // Build dynamic question list based on selected symptoms
+  const allQuestions = useMemo(() => {
+    const questions: any[] = []
+    
+    // Add symptom-specific questions for each selected symptom
+    for (const symptomId of selected) {
+      const specificQuestions = SYMPTOM_SPECIFIC_QUESTIONS[symptomId]
+      if (specificQuestions) {
+        // For headache, only add onset question if severity is S3 or S4
+        if (symptomId === 'headache') {
+          const severityAnswer = answers['hd-severity']
+          const isHighSeverity = severityAnswer === 'severe' || severityAnswer === 'excruciating'
+          
+          for (const q of specificQuestions) {
+            if (q.id === 'hd-onset') {
+              // Only add onset question if severity is high
+              if (isHighSeverity) {
+                questions.push(q)
+              }
+            } else {
+              questions.push(q)
+            }
+          }
+        } else {
+          questions.push(...specificQuestions)
+        }
+      }
+    }
+    
+    // Add generic follow-up questions
+    questions.push(...FOLLOW_UP_QUESTIONS)
+    
+    return questions
+  }, [selected, answers])
+
+  // Initialize or update current question ID when question list changes
+  useEffect(() => {
+    if (allQuestions.length > 0 && !currentQuestionId) {
+      setCurrentQuestionId(allQuestions[0].id)
+    } else if (currentQuestionId && !allQuestions.find(q => q.id === currentQuestionId)) {
+      // If current question is no longer in the list, reset to first
+      setCurrentQuestionId(allQuestions[0]?.id || null)
+    }
+  }, [allQuestions, currentQuestionId])
+
+  const currentIndex = allQuestions.findIndex(q => q.id === currentQuestionId)
+  const question = allQuestions[currentIndex]
+  const total = allQuestions.length
+  
   if (!question) return null
 
   const current = answers[question.id]
 
   const goBack = () => {
-    if (index > 0) setIndex((i) => i - 1)
-    else navigate('/symptoms')
+    if (currentIndex > 0) {
+      setCurrentQuestionId(allQuestions[currentIndex - 1].id)
+    } else {
+      navigate('/symptoms')
+    }
   }
 
   const choose = (value: string) => {
     setAnswer(question.id, value)
     // small delay so the selection is felt before advancing
     window.setTimeout(() => {
-      if (index < total - 1) setIndex((i) => i + 1)
-      else navigate('/symptoms/result')
+      if (currentIndex < total - 1) {
+        setCurrentQuestionId(allQuestions[currentIndex + 1].id)
+      } else {
+        navigate('/symptoms/result')
+      }
     }, 220)
   }
 
@@ -50,11 +103,11 @@ export function SymptomStep2() {
             <ArrowLeft size={18} />
           </button>
           <span className="text-xs font-medium text-cream/55">
-            Question {index + 1} of {total}
+            Question {currentIndex + 1} of {total}
           </span>
           <span className="w-10" />
         </div>
-        <ProgressBar value={index + 1} max={total} />
+        <ProgressBar value={currentIndex + 1} max={total} />
       </header>
 
       <div key={question.id} className="flex flex-1 flex-col animate-fade-up">

@@ -7,6 +7,7 @@ import {
   Navigation,
   ArrowRight,
   Sparkles,
+  Smile,
   type LucideIcon,
 } from 'lucide-react'
 import { Screen } from '@/components/Screen'
@@ -19,9 +20,14 @@ import { cn } from '@/lib/cn'
 
 export function Home() {
   const navigate = useNavigate()
-  const { profile, checks } = useAya()
+  const { profile, checks, addWellnessCheckin } = useAya()
   const name = profile.name || 'Friend'
   const lastCheck = checks[0]
+
+  const handleFeelingGood = () => {
+    addWellnessCheckin()
+    navigate('/symptoms/result', { state: { fine: true } })
+  }
 
   return (
     <Screen withNav>
@@ -68,6 +74,13 @@ export function Home() {
           >
             Check my symptoms
           </Button>
+          <button
+            type="button"
+            onClick={handleFeelingGood}
+            className="mt-3 inline-flex items-center gap-2 text-sm text-cream/55 hover:text-cloud"
+          >
+            <Smile size={16} /> I feel fine, just checking in
+          </button>
         </div>
       </Card>
 

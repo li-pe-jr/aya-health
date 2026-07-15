@@ -7,6 +7,7 @@ export type ConditionId =
   | 'hypertension'
   | 'asthma'
   | 'sickle-cell'
+  | 'pregnancy'
   | 'other'
 
 export type MaritalStatus = 'single' | 'married' | 'divorced' | 'widowed' | 'prefer-not-to-say' | 'other'
@@ -44,4 +45,6 @@ export interface SymptomCheck {
   symptomIds: string[]
   answers: Record<string, string>
   level: TriageLevel
+  responseKey?: string
+  status?: 'symptom' | 'well'
 }
